@@ -85,7 +85,7 @@ function syncMusic(){
   pauseAllMusic();
  }
 }
-function persist(){if(demoActive||new URLSearchParams(location.search).get('showcase')==='1')return;try{localStorage.setItem('astral_survivors_v1',JSON.stringify(save));}catch{/* Private browsers can still play without records. */}}
+function persist(){if(demoActive)return;try{localStorage.setItem('astral_survivors_v1',JSON.stringify(save));}catch{/* Private browsers can still play without records. */}}
 function clock(t){return String(Math.floor(t/60)).padStart(2,'0')+':'+String(Math.floor(t%60)).padStart(2,'0');}
 function sprite(g,img,index,cols,rows,x,y,size,flip=false,alpha=1){
  if(!img.complete||!img.naturalWidth)return;const sw=img.naturalWidth/cols,sh=img.naturalHeight/rows;
@@ -121,7 +121,7 @@ function selectDifficulty(id){difficulty=id;document.querySelectorAll('[data-dif
 D.heroes.forEach((h,i)=>{const b=document.createElement('button');b.className='hero-choice';b.dataset.hero=h.id;b.setAttribute('aria-label',h.name+' · '+h.title);b.innerHTML=`<canvas width="100" height="100" aria-hidden="true"></canvas><span>${h.id==='deepseek'?'DeepSeek':h.id==='qwen'?'Qwen':h.id==='glm'?'GLM':h.name}</span>`;b.onclick=()=>selectHero(h.id);$('roster').appendChild(b);});
 Object.entries(D.difficulties).forEach(([id,d],i)=>{const b=document.createElement('button');b.dataset.difficulty=id;b.innerHTML=`${d.name}<span>${['I','II','III'][i]}</span>`;b.onclick=()=>selectDifficulty(id);$('difficulty').appendChild(b);});
 selectHero(selected);selectDifficulty(difficulty);setupRecord();
-Promise.all([heroAtlas.decode(),enemyAtlas.decode(),desertMap.decode(),beastAtlas.decode(),labMap.decode(),labAtlas.decode(),skyAtlas.decode(),hubAtlas.decode(),hubBossMechImg.decode().catch(()=>{}),hubBossSpiritImg.decode().catch(()=>{})]).then(()=>{ready=true;document.querySelectorAll('.hero-choice canvas').forEach((c,i)=>portrait(c,i));selectHero(selected);$('start').disabled=false;$('start').textContent='开启远征　↗';if(new URLSearchParams(location.search).get('showcase')==='1')openBossDemo();}).catch(()=>{$('asset-error').hidden=false;$('asset-error').textContent='游戏素材加载失败，请刷新页面或检查 assets/survivors 目录。';$('start').textContent='素材未就绪';});
+Promise.all([heroAtlas.decode(),enemyAtlas.decode(),desertMap.decode(),beastAtlas.decode(),labMap.decode(),labAtlas.decode(),skyAtlas.decode(),hubAtlas.decode(),hubBossMechImg.decode().catch(()=>{}),hubBossSpiritImg.decode().catch(()=>{})]).then(()=>{ready=true;document.querySelectorAll('.hero-choice canvas').forEach((c,i)=>portrait(c,i));selectHero(selected);$('start').disabled=false;$('start').textContent='开启远征　↗';if(devEnabled&&new URLSearchParams(location.search).get('showcase')==='1')openBossDemo();}).catch(()=>{$('asset-error').hidden=false;$('asset-error').textContent='游戏素材加载失败，请刷新页面或检查 assets/survivors 目录。';$('start').textContent='素材未就绪';});
 function resize(){
  const panel=demoActive?$('boss-showcase').getBoundingClientRect().height:0,w=innerWidth,h=Math.max(140,innerHeight-panel);
  view.zoom=demoActive&&demoOverview?Math.min(w/2560,h/1760):1;view.w=w/view.zoom;view.h=h/view.zoom;view.dpr=Math.min(devicePixelRatio||1,2);
@@ -148,12 +148,12 @@ $('profile-toggle').onclick=()=>setProfileOpen(!profileOpen);
 $('profile-close').onclick=()=>{setProfileOpen(false);if(run?.mode==='playing')$('arena').focus({preventScroll:true});};
 
 let devEnabled=false,devPaused=false,devSpeed=1,devBuffer='',devLastKey=0,devMessage='',devImmune=false,devHighDamage=false;
-function showDeveloperPanel(open){$('developer-panel').hidden=!devEnabled||!open;$('developer-launcher').hidden=!devEnabled||open;$('developer-launcher').setAttribute('aria-expanded',String(!!open));}
+function showDeveloperPanel(open){const visible=devEnabled&&!demoActive;$('developer-panel').hidden=!visible||!open;$('developer-launcher').hidden=!visible||open;$('developer-launcher').setAttribute('aria-expanded',String(visible&&!!open));document.querySelectorAll('[data-developer-demo]').forEach(link=>link.hidden=!devEnabled);}
 function developerUnlockKey(e){
  if(run||$('setup').hidden||!$('help').hidden||e.repeat||e.ctrlKey||e.altKey||e.metaKey)return false;
  if(e.key==='Backspace'){devBuffer=devBuffer.slice(0,-1);return false;}
  if(!/^[a-z]$/i.test(e.key))return false;const now=performance.now();if(now-devLastKey>5000)devBuffer='';devLastKey=now;devBuffer=(devBuffer+e.key.toLowerCase()).slice(-8);
- if(devBuffer!=='kaifazhe')return false;devBuffer='';devEnabled=true;devMessage='已解锁，选择角色后开始远征';showDeveloperPanel(true);updateDeveloperUI();return true;
+ if(devBuffer!=='kaifazhe')return false;devBuffer='';devEnabled=true;devMessage='已解锁，选择角色后开始远征';showDeveloperPanel(true);updateDeveloperUI();if(ready&&new URLSearchParams(location.search).get('showcase')==='1')openBossDemo();return true;
 }
 function updateDeveloperUI(){
  if(!devEnabled)return;const mode=run?.mode,active=!!run;
@@ -199,12 +199,18 @@ function updateResetSkill(){
 }
 $('reset-skill').onclick=useResetSkill;
 
+document.querySelectorAll('[data-developer-demo]').forEach(link=>link.onclick=e=>{
+ e.preventDefault();if(!devEnabled||!ready||run||$('setup').hidden)return;
+ const url=new URL(location.href);url.searchParams.set('showcase','1');if(link.dataset.developerDemo==='special')url.searchParams.set('kind','special');else url.searchParams.delete('kind');
+ history.replaceState(null,'',url);openBossDemo();
+});
 function openBossDemo(){
- if(!ready)return;demoActive=true;document.body.classList.add('boss-demo');$('boss-showcase').hidden=false;$('setup').hidden=true;$('play').hidden=false;document.title='怪物技能展示 · 机械黎明';
+ if(!ready||!devEnabled)return;demoActive=true;showDeveloperPanel(false);document.body.classList.add('boss-demo');$('boss-showcase').hidden=false;$('setup').hidden=true;$('play').hidden=false;document.title='怪物技能展示 · 机械黎明';
  sound.enabled=false;const query=new URLSearchParams(location.search);demoKind=query.get('kind')==='special'?'special':'boss';const stage=Math.max(0,Math.min(3,(Number(query.get('boss'))||1)-1)),items=demoAPI().catalog[stage].skills;
  loadBossDemo(stage,items.find(s=>s.id===query.get('skill'))?.id||items[0].id);
 }
 function loadBossDemo(stage,id){
+ if(!devEnabled||!demoActive)return;
  sound.stop();visuals.clear();keys.clear();accumulator=0;devPaused=false;setProfileOpen(false);
  demoSession=new (demoAPI().Session)(stage,id,selected,demoEdits[id]||{});run=demoSession.run;recorded=true;lastMode='';lastBuild='';toastTime=0;
  const catalog=demoAPI().catalog;demoOverview=demoViewPreference??!!demoSession.skill.overview;$('demo-overview').checked=demoOverview;
@@ -252,7 +258,7 @@ $('demo-auto').onchange=e=>{demoAuto=e.target.checked;};
 $('demo-overview').onchange=e=>{demoOverview=e.target.checked;demoViewPreference=demoOverview;resize();};
 $('demo-audio').onclick=()=>{demoAudio=!demoAudio;sound.setEnabled(demoAudio);if(demoAudio)sound.unlock();$('demo-audio').textContent=demoAudio?'关闭音效':'开启音效';};
 $('demo-collapse').onclick=()=>{const compact=$('boss-showcase').classList.toggle('compact');$('demo-collapse').textContent=compact?'展开面板':'收起面板';resize();};
-$('demo-exit').onclick=()=>{demoActive=false;demoSession=null;demoOverview=false;demoViewPreference=null;document.body.classList.remove('boss-demo');$('boss-showcase').hidden=true;sound.setEnabled(soundOn);history.replaceState(null,'',location.pathname);document.title='机械黎明 · 苍穹圣殿';toSetup();resize();};
+$('demo-exit').onclick=()=>{demoActive=false;demoSession=null;demoOverview=false;demoViewPreference=null;document.body.classList.remove('boss-demo');$('boss-showcase').hidden=true;sound.setEnabled(soundOn);history.replaceState(null,'',location.pathname);document.title='机械黎明 · 苍穹圣殿';toSetup();showDeveloperPanel(false);resize();};
 
 function toSetup(){setProfileOpen(false);pauseAllMusic();currentTrack=music;sound.stop();visuals.clear();run=null;devPaused=false;devMessage='';updateDeveloperUI();keys.clear();$('overlay').hidden=true;$('play').hidden=true;$('setup').hidden=false;setupRecord();$('start').focus();}
 function pause(){devPaused=false;if(run?.pause()){sound.stop();run.avEvents=[];keys.clear();syncMode();}}

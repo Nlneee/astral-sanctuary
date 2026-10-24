@@ -3,7 +3,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),path
  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
  if(!process.env.LAB_ATTACK_INSTALLED)for(const file of ['survivor-core.js','survivor-data.js','survivors.js','boss-showcase.js'])await page.route('**/'+file+'*',r=>r.fulfill({path:path.join(__dirname,file),contentType:'text/javascript'}));
  await page.addInitScript(()=>{let api;Object.defineProperty(window,'BossShowcase',{get:()=>api,set:v=>api={...v,Session:class extends v.Session{constructor(...a){super(...a);window.demoFixture=this;}}}});});
- await page.clock.install();await page.goto('http://127.0.0.1:8765/survivors.html?showcase=1');await page.locator('#boss-showcase:not([hidden])').waitFor();await page.locator('[data-demo-boss="1"]').click();await page.locator('#demo-auto').uncheck();
+ await page.clock.install();await page.goto('http://127.0.0.1:8765/survivors.html?showcase=1');await page.keyboard.type('kaifazhe');await page.locator('#boss-showcase:not([hidden])').waitFor();await page.locator('[data-demo-boss="1"]').click();await page.locator('#demo-auto').uncheck();
  await page.locator('[data-demo-skill="barrier"]').click();await page.locator('#demo-mode').selectOption('manual');await page.clock.runFor(5100);
  const fifth=await page.evaluate(()=>demoFixture.run.hazards.find(h=>h.type==='fixedLaser'));assert.equal(fifth.shot,5);assert.equal(fifth.total,.5);await page.screenshot({path:__dirname+'/lab-fifth-lock.png'});
  await page.clock.runFor(1800);assert(await page.evaluate(()=>demoFixture.finished));

@@ -10,5 +10,6 @@ __pycache__/
 *.tar.gz
 /*-desktop.png
 /*-mobile.png
+/*.png
 /test-results/
 /playwright-report/
