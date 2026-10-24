@@ -1,0 +1,22 @@
+const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path');
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});try{
+ const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ if(!process.env.OVERLORD_INSTALLED)for(const file of ['survivor-core.js','survivors.js','survivor-av.js'])await page.route('**/'+file,r=>r.fulfill({path:path.join(__dirname,file),contentType:'text/javascript'}));
+ await page.addInitScript(()=>{let core;Object.defineProperty(window,'SurvivorCore',{get:()=>core,set:v=>core={...v,Run:class extends v.Run{constructor(...a){super(...a);window.fixture=this;}}}});});
+ await page.goto('http://127.0.0.1:8765/survivors.html');await page.locator('.hero-choice[data-hero="gpt"]').click();await page.locator('#start:not(:disabled)').click();
+ await page.evaluate(()=>{const r=fixture;r.step=()=>{};r.stage=1;r.spawnBoss();r.p.x=1400;r.p.y=800;r.p.invuln=999;const e=r.enemies.find(e=>e.boss);e.x=1050;e.y=800;e.speed=0;e.clock=999;e.combatPhase=3;e.phaseDone=false;
+  window.advance=t=>{for(let i=0;i<Math.round(t/.01);i++){r.time+=.01;r.updateZones(.01);}};
+  window.cast=skill=>{r.labFields=[];r.hazards=[];r.hostile=[];r.enemies=r.enemies.filter(e=>e.boss);e.labSeen=new Set();e.windup=0;r.castLabBoss(e,skill,0);};cast('barrier');advance(.8);
+ });
+ await page.screenshot({path:__dirname+'/overlord-square.png'});assert.equal(await page.evaluate(()=>fixture.labFields[0].segments.length),4);await page.evaluate(()=>advance(4.99));assert(await page.evaluate(()=>fixture.labFields.some(f=>f.kind==='barrier')));await page.evaluate(()=>advance(.01));assert(!await page.evaluate(()=>fixture.labFields.some(f=>f.kind==='barrier')));
+ await page.evaluate(()=>{cast('laser');advance(.9);advance(.14);});await page.screenshot({path:__dirname+'/overlord-rotating-laser.png'});assert.equal(await page.evaluate(()=>fixture.labFields[0].angles.length),3);
+ await page.evaluate(()=>advance(2.36));assert(Math.abs(await page.evaluate(()=>fixture.labFields[0].rotation)-Math.PI)<1e-6);await page.evaluate(()=>advance(2.49));assert(await page.evaluate(()=>fixture.labFields.some(f=>f.kind==='laser')));await page.evaluate(()=>advance(.01));assert(!await page.evaluate(()=>fixture.labFields.some(f=>f.kind==='laser')));
+ await page.evaluate(()=>{cast('saws');advance(.4);advance(1.21);});await page.screenshot({path:__dirname+'/overlord-four-blades-charge.png'});assert.equal(await page.evaluate(()=>fixture.labFields[0].collected),4);
+ await page.evaluate(()=>{advance(.39);fixture.updateBullets(.12);});await page.screenshot({path:__dirname+'/overlord-four-blades-fired.png'});assert.equal(await page.evaluate(()=>fixture.hostile.filter(b=>b.kind==='saw').length),4);
+ await page.evaluate(()=>{cast('control');advance(.7);const r=fixture;for(const u of r.enemies.filter(e=>e.controlled)){const baseline=new SurvivorCore.Run('gpt','normal',()=>.5);baseline.stage=1;baseline.phase='boss';const original=baseline.spawn(u.type);if(Math.abs(u.hp-original.hp*5)>1e-6||Math.abs(u.maxHp-original.maxHp*5)>1e-6)throw Error('summoned HP multiplier');}window.fixture=r;const u=r.enemies.find(e=>e.controlled);u.x=fixture.p.x-60;u.y=fixture.p.y;fixture.updateLabEnemy(u,.01);});await page.screenshot({path:__dirname+'/overlord-suicide.png'});
+ await page.evaluate(()=>{fixture.p.invuln=0;fixture.stats.armor=.95;advance(.6);});assert.equal(await page.evaluate(()=>fixture.p.hp),80);
+ await page.evaluate(()=>{cast('bombard');fixture.p.invuln=0;advance(.5);});assert.equal(await page.evaluate(()=>fixture.p.hp),60);assert.equal(await page.evaluate(()=>fixture.hazards.find(h=>h.type==='bombard').bombIndex),2);await page.screenshot({path:__dirname+'/overlord-tracking-bombard.png'});
+ await page.evaluate(()=>{fixture.p.x+=160;advance(.5);});assert.equal(await page.evaluate(()=>fixture.hazards.find(h=>h.type==='bombard').bombIndex),3);
+ await page.setViewportSize({width:480,height:840});await page.screenshot({path:__dirname+'/overlord-mobile.png'});assert.deepEqual(errors,[]);
+ console.log('PASS actual page: 5-second closed square, 5-second full-circle 3-way laser, 5x suicide unit HP, four gathered/fired blades, suicide30 and bombard20 through95%armor, independently tracked locks, narrow viewport, no runtime errors');
+ }finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1)});

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>苍穹圣殿 · AI Persona Duel</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="royal-backdrop"></div>
+  <canvas id="fx-canvas"></canvas>
+
+  <!-- 顶部皇室导航栏 -->
+  <header class="top-navbar">
+    <div class="brand-wrap">
+      <div class="brand-diamond"></div>
+      <div class="brand-title">ASTRAL SANCTUARY · 苍穹圣殿</div>
+      <div class="brand-sub">七大 AI 拟人 · 自由技能构筑与动态星象回合对战</div>
+    </div>
+    <div class="nav-actions">
+      <a id="btn-back-lobby" class="royal-btn" href="./index.html" style="text-decoration:none;display:inline-flex;align-items:center" title="返回游戏大厅，当前对局将结束">✧ 游戏大厅</a>
+      <button id="btn-speed-toggle" class="royal-btn" title="切换战斗动画与奥义特写演出速度">⚡ 演出：标准</button>
+      <button id="btn-open-guide" class="royal-btn highlight" title="查看圣殿法则、全状态增减益图鉴与七大拟人专属机制">📖 机制指南与图鉴</button>
+      <button id="btn-open-gallery" class="royal-btn">🔍 立绘鉴赏</button>
+      <button id="btn-nav-reselect" class="royal-btn">⚜️ 角色与配装</button>
+      <button id="btn-mute" class="royal-btn">🔊 音效：开启</button>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       1. 选人圣殿与技能自由搭配界面 (三栏高贵展台布局)
+       ======================================================================== -->
+  <main id="select-screen" class="screen active">
+    <!-- 顶部对阵双方横幅与模式选择 -->
+    <section class="duel-matchup-bar">
+      <div id="slot-player" class="slot-box selecting" title="点击切换为配置我方出战角色与独立技能组">
+        <div class="slot-avatar-wrap">
+          <img id="slot-player-img" src="./assets/glm-v2-gothic.png" alt="Player" />
+        </div>
+        <div class="slot-info">
+          <span class="slot-badge">✦ 我方出战角色 (点击配置我方配装)</span>
+          <div id="slot-player-name" class="slot-name">GLM · 智谱</div>
+          <div id="slot-player-sub" class="slot-sub">凛夜哥特 · 菱晶律令</div>
+        </div>
+      </div>
+
+      <div class="matchup-center">
+        <div class="mode-switch-bar">
+          <button id="btn-mode-free" class="mode-pill active" title="自由任选双方角色与配装进行单局对战">⚔️ 自由圣殿对决</button>
+          <button id="btn-mode-gauntlet" class="mode-pill" title="使用我方角色连续迎战 3 位圣殿守卫，每胜一局可择一圣殿赐福">👑 圣殿三连战巡礼</button>
+        </div>
+        <div class="difficulty-picker">
+          <label for="enemy-difficulty">敌方 AI 难度</label>
+          <select id="enemy-difficulty" aria-describedby="difficulty-desc">
+            <option value="easy">简单 · 轻松练习</option>
+            <option value="normal" selected>标准 · 圣殿对决</option>
+            <option value="hard">困难 · 战术挑战</option>
+          </select>
+        </div>
+        <div id="difficulty-desc" class="difficulty-desc" aria-live="polite"></div>
+        <div class="matchup-controls">
+          <button id="btn-swap-sides" class="royal-btn">⇄ 互换双方</button>
+          <button id="btn-random-enemy" class="royal-btn">🎲 随机对手与流派</button>
+          <button id="btn-start-duel" class="royal-btn primary">⚔️ 开启圣殿对决</button>
+        </div>
+      </div>
+
+      <div id="slot-enemy" class="slot-box enemy" title="点击切换为配置敌方对手角色与独立技能组">
+        <div class="slot-avatar-wrap">
+          <img id="slot-enemy-img" src="./assets/gpt.png" alt="Enemy" />
+        </div>
+        <div class="slot-info">
+          <span class="slot-badge">✦ 敌方对手角色 (点击配置敌方配装)</span>
+          <div id="slot-enemy-name" class="slot-name">GPT</div>
+          <div id="slot-enemy-sub" class="slot-sub">紫晶圣冠 · 全知裁决</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 中部三栏：左栏七人圣殿名录 + 中央全身大立绘舞台 + 右栏四槽位配装工坊 -->
+    <section class="select-main-area">
+      <!-- 左栏：七人圣殿名录 -->
+      <aside class="roster-sidebar">
+        <div class="sidebar-header">
+          <span>✦ 苍穹圣殿 · 七大拟人名录</span>
+          <span id="roster-target-hint" class="sidebar-sub">正在选定：我方</span>
+        </div>
+        <div id="roster-grid" class="roster-grid"></div>
+      </aside>
+
+      <!-- 中栏：当前选中角色全身大立绘展台与属性面板 -->
+      <section class="hero-showcase-panel">
+        <div id="showcase-aura" class="showcase-aura"></div>
+        <div class="showcase-top-badges">
+          <span id="showcase-role" class="showcase-role-badge">冷静控场 · 存盾与爆盾博弈</span>
+          <button id="btn-showcase-zoom" class="royal-btn mini-btn" title="放大检视高清原画">🔍 原画特写</button>
+        </div>
+
+        <div class="showcase-figure-wrap">
+          <div class="showcase-pedestal"></div>
+          <img id="showcase-img" class="showcase-img" src="./assets/glm-v2-gothic.png" alt="Character Showcase" />
+        </div>
+
+        <div class="showcase-info-overlay">
+          <div class="showcase-title-row">
+            <div>
+              <div id="insp-name" class="inspector-name">GLM · 智谱</div>
+              <div id="insp-title" class="inspector-title">凛夜哥特 · 菱晶律令</div>
+            </div>
+          </div>
+          <div id="showcase-quote" class="showcase-quote">「黑与白的边界早已计算完毕——请小心脚下的冰晶。」</div>
+
+          <div class="stats-row">
+            <div class="stat-pill">
+              <div class="stat-label">生命值 HP</div>
+              <div id="insp-hp" class="stat-val">1100</div>
+            </div>
+            <div class="stat-pill">
+              <div class="stat-label">攻击力 ATK</div>
+              <div id="insp-atk" class="stat-val">114</div>
+            </div>
+            <div class="stat-pill">
+              <div class="stat-label">速度 SPD</div>
+              <div id="insp-spd" class="stat-val">101</div>
+            </div>
+            <div class="stat-pill">
+              <div class="stat-label">基础暴击</div>
+              <div id="insp-crit" class="stat-val">16%</div>
+            </div>
+          </div>
+
+          <div class="passive-box">
+            <div id="insp-passive-name" class="passive-title">✦ 天赋被动</div>
+            <div id="insp-passive-desc" class="passive-desc"></div>
+          </div>
+
+          <!-- 专属核心机制解构卡片 -->
+          <div class="mechanic-showcase-box" id="insp-mechanic-box">
+            <div class="mechanic-header-row">
+              <span id="insp-mechanic-badge" class="mechanic-badge"></span>
+              <span id="insp-mechanic-tag" class="mechanic-tag"></span>
+              <button id="btn-inspect-mechanic-guide" class="royal-btn mini-btn" title="在指南中打开该机制的详细拆解与对决攻略">📖 机制深度解析</button>
+            </div>
+            <div id="insp-mechanic-summary" class="mechanic-summary"></div>
+            <div id="insp-mechanic-steps" class="mechanic-steps-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 右栏：独立配装工坊（明确 4 槽位栏 + 战技槽 2 / 槽 3 定向替换） -->
+      <aside class="inspector-panel">
+        <div class="inspector-header">
+          <div class="workshop-title-group">
+            <span id="editing-side-badge" class="editing-side-badge player">我方独立配装</span>
+            <span class="workshop-main-title">圣殿技能构筑工坊</span>
+          </div>
+          <div id="insp-presets" class="preset-Switch-group"></div>
+        </div>
+
+        <!-- 当前已装备的 4 个出战槽位概览（点击战技槽 2 或 槽 3 可指定替换目标） -->
+        <div class="equipped-overview-wrap">
+          <div class="equipped-overview-label">
+            <span>✦ 当前出战 4 技能槽（点击【战技槽 2】或【战技槽 3】可指定替换槽位）</span>
+          </div>
+          <div id="equipped-slots-bar" class="equipped-slots-bar"></div>
+        </div>
+
+        <!-- 8 技能池自由选择 -->
+        <div id="loadout-builder" class="loadout-builder"></div>
+      </aside>
+    </section>
+  </main>
+
+  <!-- ========================================================================
+       2. 苍穹竞技场对战界面 (Battle Arena Screen)
+       ======================================================================== -->
+  <main id="battle-screen" class="screen">
+    <!-- 顶部生命值、护盾、共鸣条、灵力与动态星象横幅 -->
+    <section class="battle-hud">
+      <div class="fighter-hud player">
+        <div class="hud-top-row">
+          <div class="hud-name-group">
+            <span id="hud-player-name" class="hud-name">GLM · 智谱</span>
+            <span id="hud-player-title" class="hud-title">凛夜哥特 · 菱晶律令</span>
+          </div>
+          <div id="hud-player-hp-text" class="hud-hp-text">1100 / 1100</div>
+        </div>
+        <div class="hp-bar-outer">
+          <div id="hud-player-ghost-bar" class="hp-bar-ghost" style="width: 100%"></div>
+          <div id="hud-player-hp-bar" class="hp-bar-fill" style="width: 100%"></div>
+          <div id="hud-player-shield-bar" class="shield-bar-fill" style="width: 0%"></div>
+        </div>
+        <div class="resonance-bar-wrap">
+          <span id="hud-player-res-label" class="res-label">⚜️ 圣殿共鸣 0%</span>
+          <div class="res-track">
+            <div id="hud-player-res-bar" class="res-fill" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="hud-bottom-row">
+          <div id="hud-player-energy" class="energy-pips"></div>
+          <div id="hud-player-statuses" class="status-list"></div>
+        </div>
+      </div>
+
+      <div class="turn-weather-banner">
+        <div class="weather-top-row">
+          <div id="turn-num" class="turn-num">TURN 1</div>
+          <button id="btn-battle-guide" class="royal-btn mini-btn weather-guide-btn" title="查看战斗机制、增减益图鉴与角色专属运转">📖 机制速查</button>
+        </div>
+        <div id="battle-difficulty" class="difficulty-badge">敌方 AI · 标准</div>
+        <div id="weather-badge" class="weather-badge">🔮 紫微星耀</div>
+        <div id="weather-desc" class="weather-desc">全场暴击率+15%，暴击伤害+15%</div>
+        <div id="weather-next" class="weather-next">下轮星象预告：❄️ 凛冬镜界</div>
+      </div>
+
+      <div class="fighter-hud enemy">
+        <div class="hud-top-row">
+          <div class="hud-name-group">
+            <span id="hud-enemy-name" class="hud-name">GPT</span>
+            <span id="hud-enemy-title" class="hud-title">紫晶圣冠 · 全知裁决</span>
+          </div>
+          <div id="hud-enemy-hp-text" class="hud-hp-text">1080 / 1080</div>
+        </div>
+        <div class="hp-bar-outer">
+          <div id="hud-enemy-ghost-bar" class="hp-bar-ghost" style="width: 100%"></div>
+          <div id="hud-enemy-hp-bar" class="hp-bar-fill" style="width: 100%"></div>
+          <div id="hud-enemy-shield-bar" class="shield-bar-fill" style="width: 0%"></div>
+        </div>
+        <div class="resonance-bar-wrap">
+          <span id="hud-enemy-res-label" class="res-label">⚜️ 圣殿共鸣 0%</span>
+          <div class="res-track">
+            <div id="hud-enemy-res-bar" class="res-fill" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="hud-bottom-row">
+          <div id="hud-enemy-energy" class="energy-pips"></div>
+          <div id="hud-enemy-statuses" class="status-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 中央全身立绘对峙舞台 + 动态星芒灵球 & 共鸣解放按钮 -->
+    <section class="battle-stage">
+      <div class="stage-side">
+        <div id="speech-player" class="speech-bubble"></div>
+        <div id="aura-player" class="pedestal-aura"></div>
+        <div class="pedestal-ring"></div>
+        <div id="frame-player" class="portrait-frame active-turn">
+          <img id="stage-player-img" class="portrait-img" src="./assets/glm-v2-gothic.png" alt="Player" />
+        </div>
+        <div id="float-player" class="floating-text-layer"></div>
+      </div>
+
+      <!-- 中央动态交互元素：漂浮星芒灵球 & 圣殿共鸣解放 -->
+      <div class="stage-center-interactive">
+        <button id="astral-orb-btn" class="astral-orb-btn" title="我方回合可点击拾取（不耗回合）；若留到敌方回合，AI 也会争夺拾取！">
+          <div id="orb-sphere" class="orb-sphere">✦</div>
+          <span id="orb-caption" class="orb-caption">点击拾取星核</span>
+          <span class="orb-rule-sub">不耗回合 · 留场敌方会争夺</span>
+        </button>
+
+        <button id="overdrive-btn" class="overdrive-btn" title="共鸣已满！点击立即解放圣殿共鸣（不消耗回合）">
+          <span class="od-title">⚜️ 圣殿共鸣解放</span>
+          <span class="od-sub">灵力+1 · 圣盾+120 · 2回合增幅</span>
+        </button>
+      </div>
+
+      <div class="stage-side">
+        <div id="speech-enemy" class="speech-bubble"></div>
+        <div id="aura-enemy" class="pedestal-aura"></div>
+        <div class="pedestal-ring"></div>
+        <div id="frame-enemy" class="portrait-frame">
+          <img id="stage-enemy-img" class="portrait-img" src="./assets/gpt.png" alt="Enemy" />
+        </div>
+        <div id="float-enemy" class="floating-text-layer"></div>
+      </div>
+    </section>
+
+    <!-- 底部恒定 4 技能槽与战报记录 -->
+    <section class="battle-bottom-dock">
+      <div id="skills-dock" class="skills-dock"></div>
+      <div class="combat-log-panel">
+        <div class="log-title">✦ 圣殿战报纪要 · Battle Chronicle</div>
+        <div id="combat-log" class="log-entries"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 终极奥义横幅特写 -->
+  <div id="ult-cutin" class="ult-cutin-overlay">
+    <div class="ult-banner">
+      <img id="ult-img" class="ult-portrait" src="./assets/glm-v2-gothic.png" alt="Ultimate" />
+      <div class="ult-text-box">
+        <div id="ult-char-name" class="ult-label">GLM · 终极奥义</div>
+        <div id="ult-skill-title" class="ult-skill-name">终律·永夜冰晶圣堂</div>
+        <div id="ult-quote-text" class="ult-quote"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 胜负结算与战后统计弹窗（含三连战赐福选择） -->
+  <div id="result-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div id="result-crown" class="result-crown">👑</div>
+      <div id="result-title" class="result-title">凯旋加冕</div>
+      <div id="result-sub" class="result-sub"></div>
+      <img id="result-img" class="result-portrait" src="./assets/glm-v2-gothic.png" alt="Winner" />
+
+      <!-- 战后数据统计栏 -->
+      <div id="result-stats-grid" class="result-stats-grid"></div>
+
+      <!-- 圣殿三连战：过关赐福三选一容器 -->
+      <div id="gauntlet-blessing-box" class="gauntlet-blessing-box" style="display: none;">
+        <div class="blessing-title">✦ 圣殿巡礼赐福（点击选择一项祝福并迎战下一位守卫）</div>
+        <div id="blessing-options" class="blessing-options"></div>
+      </div>
+
+      <div class="result-actions">
+        <button id="btn-rematch" class="royal-btn primary">⚔️ 再战一局</button>
+        <button id="btn-back-select" class="royal-btn">⚜️ 返回角色与技能搭配</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 高清立绘鉴赏弹窗 -->
+  <div id="gallery-modal" class="modal-overlay">
+    <div class="gallery-modal-card">
+      <div class="gallery-big-img-wrap">
+        <img id="gal-img" src="./assets/glm-v2-gothic.png" alt="Portrait" />
+      </div>
+      <div class="gallery-details">
+        <div>
+          <div id="gal-name" class="inspector-name" style="margin-bottom: 8px"></div>
+          <div id="gal-quote" class="ult-quote" style="margin-bottom: 16px; font-size: 14px"></div>
+          <div id="gal-appearance" class="passive-desc" style="margin-bottom: 16px"></div>
+          <div class="passive-box">
+            <div class="passive-title">✦ 核心机制定位</div>
+            <div id="gal-passive" class="passive-desc"></div>
+          </div>
+        </div>
+        <div style="text-align: right">
+          <button id="btn-close-gallery" class="royal-btn primary">关闭鉴赏</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 圣殿法则与战斗机制全解指南弹窗 (Astrolabe & Mechanics Codex) -->
+  <div id="guide-modal" class="modal-overlay">
+    <div class="guide-modal-card">
+      <div class="guide-modal-header">
+        <div class="guide-title-group">
+          <div class="guide-icon">📖</div>
+          <div>
+            <div class="guide-title">苍穹圣殿 · 战斗法则与机制全解指南</div>
+            <div class="guide-sub">七大 AI 拟人专属战斗运转 · 全增益减益状态图鉴 · 圣殿竞技场法则</div>
+          </div>
+        </div>
+        <button id="btn-close-guide" class="royal-btn mini-btn">✕ 关闭</button>
+      </div>
+
+      <!-- 导航标签页 -->
+      <div class="guide-tabs-bar">
+        <button class="guide-tab-btn active" data-tab="tab-chars">⚜️ 七大拟人专属机制</button>
+        <button class="guide-tab-btn" data-tab="tab-statuses">✦ 全状态与增减益图鉴</button>
+        <button class="guide-tab-btn" data-tab="tab-rules">🌌 圣殿法则与系统公式</button>
+      </div>
+
+      <!-- 标签页内容容器 -->
+      <div class="guide-modal-body">
+        <!-- 标签页 1：七大拟人专属机制 -->
+        <div id="tab-chars" class="guide-tab-pane active">
+          <div id="guide-chars-list" class="guide-chars-list"></div>
+        </div>
+
+        <!-- 标签页 2：全状态与增减益图鉴 -->
+        <div id="tab-statuses" class="guide-tab-pane">
+          <div id="guide-statuses-list" class="guide-status-grid"></div>
+        </div>
+
+        <!-- 标签页 3：圣殿法则与系统公式 -->
+        <div id="tab-rules" class="guide-tab-pane">
+          <div id="guide-rules-container" class="guide-rules-list"></div>
+        </div>
+      </div>
+
+      <div class="guide-modal-footer">
+        <span class="guide-footer-tip">💡 提示：在战斗中将鼠标悬停在状态徽章、星象横幅或技能按钮上，亦可实时查看即时机制说明。</span>
+        <button id="btn-close-guide-foot" class="royal-btn primary">确定并返回</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./characters.js"></script>
+  <script src="./audio.js"></script>
+  <script src="./enemy-ai.js"></script>
+  <script src="./game.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "tool": "built-in image_gen",
+  "prompt": "Create an original polished 2D game background: mechanical organism research laboratory arena, strict directly overhead orthographic plan view, no perspective, 4:3 landscape. Entire image represents 3200 by 2400 world units. The centered playable rectangle is x=12.5% to 87.5%, y=16.67% to 83.33%: keep this ENTIRE center area empty of furniture, walls and obstacles, an elegant dark blue-gray matte tiled laboratory floor with restrained panel seams and a very faint central calibration circle. All detailed research equipment must remain in the exterior border bands outside this center rectangle. Top border: glass cyan containment tanks holding incomplete mechanical animal prototypes, delicate cable bundles, robotic assembly arms. Left border: mechanical body dissection and repair workstations, titanium limbs, tool carts and diagnostic monitors. Right border: computer consoles, server cabinets and reactor analysis instruments. Bottom border: robot chassis on maintenance benches, articulated robotic arms and storage racks. Corners connect naturally into one continuous enclosed laboratory. Thin recessed cyan safety strips demarcate the rectangle, no thick walls blocking the arena. Rich hand-painted anime game environment illustration, crisp machinery silhouettes, cool teal and steel palette with small amber instrument lights, atmospheric but readable, consistent top-down shadows. No people, enemies, characters, UI, text, logos or labels. Spacious uncluttered low-contrast playable center, detailed perimeter, no furniture intruding into playable rectangle.",
+  "output": "mechanical-laboratory.png",
+  "render_source_rectangle": [
+    20,
+    41,
+    1408,
+    926
+  ]
+}

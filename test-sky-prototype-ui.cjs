@@ -1,0 +1,20 @@
+const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path');
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});try{
+ const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ if(!process.env.SKY_PROTO_INSTALLED)for(const file of ['survivor-core.js','survivors.js'])await page.route('**/'+file,r=>r.fulfill({path:path.join(__dirname,file),contentType:'text/javascript'}));
+ await page.addInitScript(()=>{let core;Object.defineProperty(window,'SurvivorCore',{get:()=>core,set:value=>core={...value,Run:class extends value.Run{constructor(...a){super(...a);window.fixture=this;}}}});});
+ await page.goto('http://127.0.0.1:8765/survivors.html');await page.locator('.hero-choice[data-hero="gpt"]').click();await page.locator('#start:not(:disabled)').click();
+ await page.evaluate(()=>{const r=fixture;r.step=()=>{};r.stage=2;r.spawnBoss();r.p.invuln=999;r.p.x=1400;r.p.y=800;const e=r.enemies[0];e.x=1050;e.y=800;e.clock=999;e.speed=0;
+  window.advance=t=>{for(let i=0;i<Math.round(t/.01);i++){r.time+=.01;r.updateZones(.01);}};
+  r.castSky(e,'rift',0);advance(.4);
+ });assert.equal(await page.evaluate(()=>fixture.hazards.filter(h=>h.type==='rift').length),1);await page.screenshot({path:__dirname+'/sky-sector-warning.png'});await page.evaluate(()=>advance(.4));assert.equal(await page.evaluate(()=>fixture.skyFields.filter(f=>f.kind==='rift').length),1);assert(Math.abs(await page.evaluate(()=>fixture.skyFields[0].halfAngle*2)-Math.PI/12)<1e-6);await page.screenshot({path:__dirname+'/sky-sector-active.png'});
+ await page.evaluate(()=>{fixture.p.y+=150;advance(.5);});assert.equal(await page.evaluate(()=>fixture.hazards[0].shot),2);assert(!await page.evaluate(()=>fixture.enemies[0].skySeen?.has('rift')));
+ await page.evaluate(()=>advance(.8));assert.equal(await page.evaluate(()=>fixture.skyFields[0].shot),2);await page.screenshot({path:__dirname+'/sky-sector-second.png'});
+ await page.evaluate(()=>{fixture.p.y-=300;advance(.5);});assert.equal(await page.evaluate(()=>fixture.hazards[0].shot),3);assert(!await page.evaluate(()=>fixture.enemies[0].skySeen?.has('rift')));
+ await page.evaluate(()=>advance(.8));assert.equal(await page.evaluate(()=>fixture.skyFields[0].shot),3);await page.evaluate(()=>advance(.5));assert(await page.evaluate(()=>fixture.enemies[0].skySeen.has('rift')));assert.equal(await page.evaluate(()=>fixture.hazards.length+fixture.skyFields.length),0);await page.evaluate(()=>advance(12));assert.equal(await page.evaluate(()=>fixture.hazards.length+fixture.skyFields.length),0);
+ await page.evaluate(()=>{const r=fixture,e=r.enemies[0];r.hazards=[];r.skyFields=[];e.combatPhase=3;r.p.hp=r.p.maxHp=1000;r.p.invuln=0;r.stats.armor=.99;r.castSky(e,'transfer',0);});assert.equal(await page.evaluate(()=>fixture.skyFields[0].towers.length),4);assert.equal(await page.evaluate(()=>fixture.aimNearest()),null);await page.screenshot({path:__dirname+'/sky-transfer-prototype.png'});
+ await page.evaluate(()=>{fixture.p.x=100;fixture.p.y=100;});await page.screenshot({path:__dirname+'/sky-tower-corner-prototype.png'});
+ await page.evaluate(()=>advance(11.99));assert.equal(await page.evaluate(()=>fixture.p.hp),1000);await page.evaluate(()=>advance(.01));assert.equal(await page.evaluate(()=>fixture.p.hp),800);assert.equal(await page.evaluate(()=>fixture.enemies[0].quantumCharge),0);
+ await page.evaluate(()=>{const r=fixture,e=r.enemies[0];r.p.x=1400;r.p.y=800;r.p.invuln=999;e.windup=0;r.castSky(e,'pulsewave',0);advance(.5);});assert(await page.evaluate(()=>fixture.skyFields.some(f=>f.kind==='pulsewave')));assert.deepEqual(errors,[]);
+ console.log('PASS actual prototype page: three15deg sectors, each .8s warning and .5s active, no fourth shot, four corner tower markers, untargetable charging boss, 12s full-field200 despite99%armor, teleport pulse and no runtime errors');
+ }finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1);});

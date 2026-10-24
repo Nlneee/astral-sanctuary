@@ -1,0 +1,13 @@
+{
+  "title": "回路迫近 / Circuit Pressure",
+  "bpm": 112,
+  "bars": 32,
+  "durationSeconds": 68.57142857142857,
+  "sampleRate": 44100,
+  "channels": 2,
+  "peakDb": -2.047458174191171,
+  "rmsDb": -17.395739981988903,
+  "seamDelta": 0.002043310353371818,
+  "composition": "Original D minor electronic instrumental. 8 bars pulse, 8 bars motif, 8 bars reduced percussion, 8 bars full motif. Periodic wrapped delay and pad tails.",
+  "source": "generate-music.cjs; synthesized oscillators and seeded noise, no third-party samples"
+}

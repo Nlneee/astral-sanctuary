@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict'),{Run}=require('./survivor-core.js'),D=require('./survivor-data.js');
+function make(type){const r=new Run('gpt','normal',()=>.5);r.stage=1;r.p.invuln=999;const e=r.spawn(type);e.x=900;e.y=800;e.clock=0;return [r,e];}
+function tick(r,t){for(let i=0;i<Math.ceil(t/.02);i++){r.updateEnemies(.02);r.updateZones(.02);}}
+{const [r,e]=make(17);e.x=950;tick(r,1);assert(r.labFields.some(f=>f.kind==='acid'));r.p.x=1000;r.p.y=800;r.p.invuln=0;const hp=r.p.hp;tick(r,.6);assert(r.p.hp<hp);r.hit(e,1e9,false);assert.equal(r.labFields.length,0);}
+{const [r,e]=make(18);tick(r,1.3);const rockets=r.hostile.filter(b=>b.kind==='rocket');assert.equal(rockets.length,3);for(const b of rockets)assert(Math.abs(Math.hypot(b.vx,b.vy)-266)<1e-8);const b=rockets[0],vy=b.vy;r.p.x=2000;r.p.y=1100;r.updateBullets(.1);assert.notEqual(b.vy,vy);for(let i=0;i<12;i++){r.updateBullets(.1);for(const shot of rockets)assert(Math.abs(Math.hypot(shot.vx,shot.vy)-266)<1e-8);}assert(b.homingTime<=0);}
+{const [r,e]=make(19);let count=0;const resolve=r.resolveLabHazard.bind(r);r.resolveLabHazard=h=>{if(h.type==='stab')count++;resolve(h);};tick(r,3);assert.equal(count,3);}
+{const [r,e]=make(20),ally=r.spawn(13);ally.x=e.x+50;ally.y=e.y;ally.hp=10;tick(r,.1);assert(ally.hp>10&&ally.hp<=ally.maxHp);}
+{const [r,e]=make(21);tick(r,1.2);assert.equal(r.hostile.filter(b=>b.kind==='sonic').length,3);}
+{const r=new Run();r.stage=1;r.p.invuln=999;r.spawnBoss();const e=r.enemies[0],completed=new Set(),finish=r.labComplete.bind(r);r.labComplete=(boss,skill)=>{completed.add(skill);finish(boss,skill);};
+for(let phase=1;phase<=3;phase++){r.hit(e,1e9,false);assert(!e.dead);for(let i=0;i<2000&&(!e.phaseDone||e.phaseAge<4);i++){r.updateEnemies(.02);r.updateZones(.02);}assert(e.phaseDone,'phase '+phase);r.hit(e,1e9,false);}
+assert(e.dead);assert.deepEqual([...completed].sort(),['barrier','bombard','control','laser','saws']);assert.equal(r.labFields.length,0);}
+{const r=new Run();r.stage=1;r.spawnBoss();const e=r.enemies[0];r.labFields.push({kind:'barrier',source:e.id,life:3,x:1200,y:800,half:210,segments:r.labBox(1200,800)});for(const [x,y] of [[1600,800],[800,800],[1200,1200],[1200,400]]){r.p.x=x;r.p.y=y;r.labWallBlock(1200,800);assert(Math.abs(r.p.x-1200)<=187);assert(Math.abs(r.p.y-800)<=187);}r.spawnClock=0;r.fireClock=999;r.p.invuln=999;r.step(.01);assert.equal(r.enemies.length,1);}
+assert.deepEqual(D.stages[1].wavePools.map(p=>p.length),Array.from({length:20},(_,i)=>i<4?4:i<6?5:i<9?7:9));assert.equal(D.stages[0].wavePools.length,20);console.log('PASS all 5 elites, all 5 boss mechanisms across 3 protected phases, closed square forcefield collision, no passive boss reinforcements, stage isolation');

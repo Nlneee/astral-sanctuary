@@ -1,0 +1,6 @@
+{
+  "tool": "builtin image_gen",
+  "prompt": "Use case: background-extraction. Make a transparent game sprite atlas from these exact ten robot designs, preserving their mechanical equipment, silhouettes, colors and painted style. Arrange EXACTLY 5 equal columns and 2 equal rows on a landscape canvas. Every robot entirely within its own cell with generous transparent margins (15% padding on all sides), no overlapping neighboring cells. Row 1: biped cyan-eye scout, cyan icosahedron floating orb, four-legged welding engineer, dark blue humanoid assault rifle soldier, green twin-tank corrosive spray heavy robot. Row 2: red radar missile bombardier, forward leaning lance assassin, green floating healer with two arms, four-legged circular sonic cannon (one only), golden supreme robot boss with halo crown, shoulder missile pods, hexagonal drones, triple chest cannon and two forearm circular saws. Full bodies, no extra guards. Remove black background, true alpha transparency. No ground shadows, no text or borders. Keep weapons in idle pose, no long attack beams protruding outside cells.",
+  "reference": "C:/Users/nlen/AppData/Local/Temp/codex-clipboard-657bff08-16f5-4e26-afae-756f2eb54157.png",
+  "original": "C:/Users/nlen/.codex/generated_images/01a153ef-7a37-7af1-8240-75a74ea20ec4/exec-05ad4521-f98c-4b65-a2af-fe8751bbf126.png"
+}

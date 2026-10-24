@@ -1,0 +1,11 @@
+{
+  "tool": "built-in image_gen",
+  "prompt": "Paint a high-quality 2D hand-painted video game desert battlefield map, landscape 4:3. Strictly top-down orthographic view, no sky, no horizon, no perspective tilt. Warm muted ochre sand, subtle wind ripples and faint old tank tracks. A large completely open flat sandy rectangular central arena covers the middle 75% of the width and middle 67% of the height. Keep that central area low-contrast and clear for chibi characters and projectiles. In ALL FOUR outer border strips, place large destroyed robots and mechanical wreckage half-buried in dunes: broken mech torsos, severed robotic arms, wrecked cannon turret, cracked blue-gray armor, a shattered tank and a downed mechanical wing, loose gears and cables. Wrecks should be clearly visible close to the central area's edges but remain outside it. All machines are inert wrecks seen from above. Continuous sandy terrain from center to exterior, no hard seams, no frame, no grid. Anime-inspired environmental painting, detailed metal wrecks, soft shallow shadows and warm sunlight. No living characters, no active enemies, no text, no UI, no logos. Opaque full-bleed background.",
+  "asset": "assets/survivors/desert-battlefield.png",
+  "world": {
+    "playableWidth": 2400,
+    "playableHeight": 1600,
+    "exteriorMargin": 400
+  },
+  "usage": "Only stage zero. Continuous painted desert map with exterior mechanical wreckage. Original generated raster copied unchanged."
+}

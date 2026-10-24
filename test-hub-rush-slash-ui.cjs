@@ -1,0 +1,15 @@
+const {chromium}=require('playwright'),assert=require('node:assert/strict'),path=require('node:path');
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});try{
+ const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ if(!process.env.HUB_SLASH_INSTALLED)for(const file of ['survivor-hub.js','survivors.js','survivor-av.js','boss-showcase.js'])await page.route('**/'+file+'*',r=>r.fulfill({path:path.join(__dirname,file),contentType:'text/javascript'}));
+ await page.addInitScript(()=>{let core;Object.defineProperty(window,'SurvivorCore',{get:()=>core,set:value=>core={...value,Run:class extends value.Run{constructor(...a){super(...a);window.fixture=this;}}}});});
+ await page.clock.install();await page.goto('http://127.0.0.1:8765/survivors.html?showcase=1&boss=4&skill=rush');await page.locator('#boss-showcase:not([hidden])').waitFor();await page.locator('#demo-mode').selectOption('manual');await page.locator('#demo-auto').uncheck();await page.locator('#demo-replay').click();
+ await page.clock.runFor(1300);assert(await page.evaluate(()=>fixture.hazards.some(h=>h.type==='rushSlash')));assert(!await page.evaluate(()=>fixture.enemies[0].hubSeen.has('rush')));await page.screenshot({path:__dirname+'/hub-rush-slash-warning.png'});
+ const hp=await page.evaluate(()=>{const h=fixture.hazards.find(h=>h.type==='rushSlash');fixture.p.x=h.x-Math.cos(h.angle)*140;fixture.p.y=h.y-Math.sin(h.angle)*140;fixture.p.invuln=0;return fixture.p.hp;});
+ await page.clock.runFor(600);assert.equal(await page.evaluate(()=>fixture.p.hp),hp);assert(await page.evaluate(()=>fixture.hubFields.some(f=>f.kind==='rushSlash')));await page.screenshot({path:__dirname+'/hub-rush-slash-active.png'});
+ await page.clock.runFor(400);assert(await page.evaluate(()=>fixture.enemies[0].hubSeen.has('rush')));
+ await page.locator('[data-demo-skill="phaseRush"]').click();await page.evaluate(()=>{const r=fixture,resolve=r.resolveHubHazard.bind(r);window.slashEvents=[];r.resolveHubHazard=h=>{if(['rush','rushSlash'].includes(h.type))slashEvents.push(h.type+':'+h.shot);resolve(h);};});
+ await page.clock.runFor(900);assert.equal(await page.evaluate(()=>fixture.hazards.find(h=>h.type==='rushSlash').shot),1);await page.clock.runFor(800);assert.equal(await page.evaluate(()=>fixture.hazards.find(h=>h.type==='rush').shot),2);
+ await page.clock.runFor(800);assert.equal(await page.evaluate(()=>fixture.hazards.find(h=>h.type==='rushSlash').shot),2);await page.clock.runFor(1000);assert.deepEqual(await page.evaluate(()=>slashEvents),['rush:1','rushSlash:1','rush:2','rushSlash:2']);assert(await page.evaluate(()=>fixture.enemies[0].hubSeen.has('rush')));assert.deepEqual(errors,[]);
+ console.log('PASS actual demo: dash lands then large fixed sector warns, slash animates, back stays safe, next action waits; spirit performs two complete dash/slash pairs; no runtime errors');
+ }finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1);});

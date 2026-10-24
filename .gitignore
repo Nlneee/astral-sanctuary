@@ -1,0 +1,14 @@
+dist/
+backups/
+node_modules/
+__pycache__/
+.env
+.env.*
+*.log
+*.tmp
+*.zip
+*.tar.gz
+/*-desktop.png
+/*-mobile.png
+/test-results/
+/playwright-report/
